@@ -1,0 +1,22 @@
+ENTRY(avp_mailbox)
+ENTRY(avp_start)
+MEMORY
+{
+	load (wx) : ORIGIN = 0x40000400, len = 0x3FC00
+}
+SECTIONS
+{
+	.text : {
+		*(.text .text.*)
+	} >load
+
+	. = ALIGN(4);
+	.data : {
+		*(.data .data.*)
+	}
+
+	. = ALIGN(4);
+	.bss : {
+		*(.bss .bss.*)
+	}
+}
