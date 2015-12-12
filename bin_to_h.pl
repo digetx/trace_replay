@@ -190,7 +190,7 @@ sub reg_addr_to_name {
         when (0x6001B158) { return "ARVDE_BSEV_SECURE_SEC_SEL6_0"; }
         when (0x6001B15C) { return "ARVDE_BSEV_SECURE_SEC_SEL7_0"; }
         when ([0x60010000..0x600100FF]) { return "UCQ" }
-        when ([0x60011000..0x60011FFF]) { return "BSEA" }
+        when ([0x60011000..0x60011FFF]) { return "BSEA Unknown" }
         when ([0x6001A000..0x6001AFFF]) { return "SXE" }
         when ([0x6001B000..0x6001BFFF]) { return "BSEV Unknown" }
         when ([0x6001C000..0x6001C0FF]) { return "MBE" }
@@ -213,7 +213,7 @@ sub irq_to_name {
     given ($irq) {
         when (0) { return "INT_TMR1"; }
         when (1) { return "INT_TMR2"; }
-        when (2) { return "INT_RTC	"; }
+        when (2) { return "INT_RTC"; }
         when (3) { return "INT_I2S2"; }
         when (4) { return "INT_SHR_SEM_INBOX_IBF"; }
         when (5) { return "INT_SHR_SEM_INBOX_IBE"; }
@@ -227,21 +227,21 @@ sub irq_to_name {
         when (13) { return "INT_I2S1"; }
         when (14) { return "INT_SDMMC1"; }
         when (15) { return "INT_SDMMC2"; }
-        when (16) { return "INT_XIO	"; }
-        when (17) { return "INT_VDE	"; }
+        when (16) { return "INT_XIO"; }
+        when (17) { return "INT_VDE"; }
         when (18) { return "INT_AVP_UCQ"; }
         when (19) { return "INT_SDMMC3"; }
-        when (20) { return "INT_USB	"; }
+        when (20) { return "INT_USB"; }
         when (21) { return "INT_USB2"; }
         when (22) { return "INT_PRI_RES_22"; }
         when (23) { return "INT_EIDE"; }
         when (24) { return "INT_NANDFLASH"; }
-        when (25) { return "INT_VCP	"; }
+        when (25) { return "INT_VCP"; }
         when (26) { return "INT_APB_DMA"; }
         when (27) { return "INT_AHB_DMA"; }
         when (28) { return "INT_GNT_0"; }
         when (29) { return "INT_GNT_1"; }
-        when (30) { return "INT_OWR	"; }
+        when (30) { return "INT_OWR"; }
         when (31) { return "INT_SDMMC4"; }
         when (32) { return "INT_GPIO1"; }
         when (33) { return "INT_GPIO2"; }
@@ -249,9 +249,9 @@ sub irq_to_name {
         when (35) { return "INT_GPIO4"; }
         when (36) { return "INT_UARTA"; }
         when (37) { return "INT_UARTB"; }
-        when (38) { return "INT_I2C	"; }
-        when (39) { return "INT_SPI	"; }
-        when (40) { return "INT_TWC	"; }
+        when (38) { return "INT_I2C"; }
+        when (39) { return "INT_SPI"; }
+        when (40) { return "INT_TWC"; }
         when (41) { return "INT_TMR3"; }
         when (42) { return "INT_TMR4"; }
         when (43) { return "INT_FLOW_RSM0"; }
@@ -296,7 +296,7 @@ sub irq_to_name {
         when (82) { return "INT_SPI_2"; }
         when (83) { return "INT_SPI_3"; }
         when (84) { return "INT_I2C2"; }
-        when (85) { return "INT_KBC	"; }
+        when (85) { return "INT_KBC"; }
         when (86) { return "INT_EXTERNAL_PMU"; }
         when (87) { return "INT_GPIO6"; }
         when (88) { return "INT_TVDAC"; }
