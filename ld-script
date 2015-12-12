@@ -1,4 +1,3 @@
-ENTRY(avp_mailbox)
 ENTRY(avp_start)
 MEMORY
 {
