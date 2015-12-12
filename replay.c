@@ -152,7 +152,7 @@ static void map_mem(off_t phys_address, off_t size)
 	mem_virt += PageOffset >> 2;
 }
 
-static void replay(void)
+static int replay(void)
 {
 	int step;
 
@@ -193,7 +193,7 @@ static void replay(void)
 					rec_src, rec->val1, ret, rec->val2);
 
 				if (!(rec->type & RECORD_NOFAIL)) {
-					abort();
+					return 1;
 				}
 			}
 			break;
@@ -218,16 +218,20 @@ static void replay(void)
 		}
 		default:
 			fprintf(stderr, "Something gone wrong\n");
-			abort();
+			return 2;
 		}
 	}
 
 end:
 	printf("Replay completed successfully\n");
+
+	return 0;
 }
 
 int main(void)
 {
+	int ret;
+
 	printf("AVP entry point: 0x%08X\n", AVP_ENTRY_ADDR);
 
 	map_mem(0x0, 0x70000000);
@@ -241,9 +245,9 @@ int main(void)
 
 	start_avp();
 
-	replay();
+	ret = replay();
 
 	stop_avp();
 
-	return 0;
+	return ret;
 }
