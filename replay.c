@@ -34,6 +34,11 @@
 #define FLOW_MODE_STOP			(2 << 29)
 #define FLOW_MODE_NONE			0
 
+#define PRI_ICTLR_IRQ_LATCHED		0x60004010
+#define SEC_ICTLR_IRQ_LATCHED		0x60004110
+#define TRI_ICTLR_IRQ_LATCHED		0x60004210
+#define QUAD_ICTLR_IRQ_LATCHED		0x60004310
+
 #define AVP_IDLE	0
 #define AVP_READ	1
 #define AVP_WRITE	2
@@ -152,6 +157,37 @@ static void map_mem(off_t phys_address, off_t size)
 	mem_virt += PageOffset >> 2;
 }
 
+static int irq_sts(int irq_nb)
+{
+	int bank = irq_nb >> 5;
+	uint32_t reg;
+	int mask;
+
+	switch (bank) {
+	case 0:
+		reg = PRI_ICTLR_IRQ_LATCHED;
+		mask = 1 << irq_nb;
+		break;
+	case 1:
+		reg = SEC_ICTLR_IRQ_LATCHED;
+		mask = 1 << (irq_nb - 32);
+		break;
+	case 2:
+		reg = TRI_ICTLR_IRQ_LATCHED;
+		mask = 1 << (irq_nb - 64);
+		break;
+	case 3:
+		reg = QUAD_ICTLR_IRQ_LATCHED;
+		mask = 1 << (irq_nb - 96);
+		break;
+	default:
+		/* Should never happen.  */
+		abort();
+	}
+
+	return !!(mem_read(reg) & mask);
+}
+
 static int replay(void)
 {
 	int step;
@@ -171,7 +207,18 @@ static int replay(void)
 		{
 			printf("%s record IRQ:   %d [%s] sts=%d\n",
 			       rec_src, rec->val1, rec->dsc, rec->val2);
-			// TODO: Skip for now
+
+			usleep(1000);
+
+			if (irq_sts(rec->val1) != rec->val2) {
+				fprintf(stderr, "Fail: IRQ %d [%s] = %d " \
+						"status mismatch\n",
+					rec->val1, rec->dsc, rec->val2);
+
+				if (!(rec->type & RECORD_NOFAIL)) {
+					return 1;
+				}
+			}
 			break;
 		}
 		case RECORD_READ:
