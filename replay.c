@@ -202,7 +202,7 @@ static int replay(void)
 
 		printf("Step %d: ", step);
 
-		switch (rec->type & 0x000FFFFF) {
+		switch (rec->type) {
 		case RECORD_IRQ:
 		{
 			printf("%s record IRQ:   %d [%s] sts=%d\n",
@@ -214,14 +214,12 @@ static int replay(void)
 				fprintf(stderr, "Fail: IRQ %d [%s] = %d " \
 						"status mismatch\n",
 					rec->val1, rec->dsc, rec->val2);
-
-				if (!(rec->type & RECORD_NOFAIL)) {
-					return 1;
-				}
+				return 4;
 			}
 			break;
 		}
 		case RECORD_READ:
+		case RECORD_READNF:
 		{
 			uint32_t ret;
 
@@ -239,7 +237,7 @@ static int replay(void)
 						"0x%08X = 0x%08X, expected 0x%08X\n",
 					rec_src, rec->val1, ret, rec->val2);
 
-				if (!(rec->type & RECORD_NOFAIL)) {
+				if (rec->type != RECORD_READNF) {
 					return 1;
 				}
 			}

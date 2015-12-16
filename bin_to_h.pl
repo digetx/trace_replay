@@ -6,7 +6,7 @@ use warnings;
 use feature "switch";
 no warnings 'experimental::smartmatch';
 
-my @defines = ('RECORD_IRQ', 'RECORD_READ', 'RECORD_WRITE');
+my @defines = ('RECORD_IRQ', 'RECORD_READ', 'RECORD_WRITE', 'RECORD_READNF');
 
 open(BINFILE, "<".$ARGV[0]) or die "cannot open $!";
 
@@ -14,7 +14,11 @@ my $version;
 read BINFILE, $version, 4;
 $version = unpack('N', $version);
 
-die "Record version mismatch" if ($version != 06122015);
+given ($version) {
+    when (06122015) {}
+    when (16122015) {}
+    default: { die "Record version mismatch" }
+}
 
 open(TXTFILE, ">".$ARGV[1]) or die "cannot open $!";
 
@@ -22,9 +26,8 @@ print TXTFILE <<H_HEAD;
 #define RECORD_IRQ      0
 #define RECORD_READ     1
 #define RECORD_WRITE    2
-#define RECORD_END      3
-#define RECORD_NOFAIL   (1 << 31)
-#define RECORD_READNF   (RECORD_READ | RECORD_NOFAIL)
+#define RECORD_READNF   3
+#define RECORD_END      999
 
 #define ON_CPU  0
 #define ON_AVP  1
