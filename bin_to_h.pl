@@ -6,7 +6,18 @@ use warnings;
 use feature "switch";
 no warnings 'experimental::smartmatch';
 
-my @defines = ('RECORD_IRQ', 'RECORD_READ', 'RECORD_WRITE', 'RECORD_READNF');
+my @defines = (
+    'RECORD_IRQ',
+    'RECORD_READ32',
+    'RECORD_WRITE32',
+    'RECORD_READ32NF',
+    'RECORD_READ8',
+    'RECORD_WRITE8',
+    'RECORD_READ16',
+    'RECORD_WRITE16',
+
+    'RECORD_MEMSET32',
+);
 
 open(BINFILE, "<".$ARGV[0]) or die "cannot open $!";
 
@@ -17,36 +28,66 @@ $version = unpack('N', $version);
 given ($version) {
     when (06122015) {}
     when (16122015) {}
-    default: { die "Record version mismatch" }
+    when (20151226) {}
+    default: { die "Record version mismatch $version" }
 }
 
 open(TXTFILE, ">".$ARGV[1]) or die "cannot open $!";
 
 print TXTFILE <<H_HEAD;
-#define RECORD_IRQ      0
-#define RECORD_READ     1
-#define RECORD_WRITE    2
-#define RECORD_READNF   3
-#define RECORD_END      999
-
 #define ON_CPU  0
 #define ON_AVP  1
 
 #define RECORD_SKIP_N_FIRST 0
+
+enum {
+    RECORD_IRQ,
+    RECORD_READ32,
+    RECORD_WRITE32,
+    RECORD_READ32NF,
+    RECORD_READ8,
+    RECORD_WRITE8,
+    RECORD_READ16,
+    RECORD_WRITE16,
+
+    RECORD_MEMSET32,
+    RECORD_END,
+};
 
 static struct record {
     const uint32_t avp;
     const uint32_t type;
     const uint32_t val1;
     const uint32_t val2;
+    const uint32_t val3;
     const char *dsc;
 } Records[] = {
 H_HEAD
 
 my $record;
-my $step;
+my $step = 0;
 
-for ($step = 0; read(BINFILE, $record, 13) > 0; $step++) {
+my $seq_addr;
+my $seq_val;
+my $seq_src;
+my $seq = 0;
+
+sub write_record {
+    my $src  = shift;
+    my $type = shift;
+    my $val1 = shift;
+    my $val2 = shift;
+    my $val3 = shift;
+
+    $src = ($src == 1) ? "ON_AVP" : "ON_CPU";
+
+    my $dsc = ($type == 0) ? irq_to_name($val1) : reg_addr_to_name($val1);
+
+    printf TXTFILE ("    {%s, %s,\t0x%08X, 0x%08X, %d,\t\"$dsc\"}, // Step: %d\n",
+                    $src, $defines[$type], $val1, $val2, $val3, $step++);
+}
+
+while (read(BINFILE, $record, 13) > 0) {
     my ($src, $type, $val1, $val2) = unpack 'cNNN', $record;
 
     if ($type >= scalar(@defines)) {
@@ -54,16 +95,73 @@ for ($step = 0; read(BINFILE, $record, 13) > 0; $step++) {
         die "Wrong record type $type";
     }
 
-    $src = ($src == 1) ? "ON_AVP" : "ON_CPU";
-    my $dsc = ($type == 0) ? irq_to_name($val1) : reg_addr_to_name($val1);
-    printf TXTFILE ("    {%s, %s,\t0x%08X, 0x%08X, \"$dsc\"}, // Step: %d\n",
-                    $src, $defines[$type], $val1, $val2, $step);
+    # Merge sequential and identical 32bit memory writes [32bit memset]
+    if (($type == 2) && ($val1 < 0x40040000)) {
+        # Start the sequence
+        $seq++;
+
+        if ($seq == 1) {
+            $seq_addr = $val1;
+            $seq_val  = $val2;
+            $seq_src  = $src;
+            next;
+        }
+
+        my $prev_addr = $seq_addr + ($seq - 1) * 4 ;
+
+        if (($prev_addr == $val1) && ($seq_val == $val2) && ($seq_src == $src)) {
+            next;
+        }
+    }
+
+    # Sequence ended, store it
+    if ($seq) {
+        my $seq_type = 8;
+
+        # Not a sequence, if contains only 1 entry
+        if ($seq == 1) {
+            $seq_type = 2;
+            $seq = 0;
+        }
+
+        if ($seq) {
+            printf("Merged 0x%08X ... 0x%08X = 0x%08X\n",
+                    $seq_addr, $seq_addr + $seq * 4, $seq_val);
+        }
+
+        write_record($seq_src, $seq_type, $seq_addr, $seq_val, $seq);
+
+        $seq = 0;
+
+        # Start a new sequence
+        if (($type == 2) && ($val1 < 0x40040000)) {
+            $seq_addr = $val1;
+            $seq_val  = $val2;
+            $seq_src  = $src;
+            $seq      = 1;
+            next;
+        }
+    }
+
+    write_record($src, $type, $val1, $val2, 0);
 }
 
 print TXTFILE "};\n";
 
+sub in_range {
+    my $addr = shift;
+    my $start = shift;
+    my $end = shift;
+
+    return ($addr >= $start && $addr <= $end);
+}
+
 sub reg_addr_to_name {
-    given (shift) {
+    my $addr = shift;
+
+    given ($addr) {
+        when (in_range($addr, 0x00000000, 0x3FFFFFFF)) { return "DRAM" }
+        when (in_range($addr, 0x40000000, 0x4003FFFF)) { return "IRAM" }
         when (0x60006000) { return "CLK_RST_CONTROLLER_RST_SOURCE_0"; }
         when (0x60006004) { return "CLK_RST_CONTROLLER_RST_DEVICES_L_0"; }
         when (0x60006008) { return "CLK_RST_CONTROLLER_RST_DEVICES_H_0"; }
@@ -192,19 +290,19 @@ sub reg_addr_to_name {
         when (0x6001B154) { return "ARVDE_BSEV_SECURE_SEC_SEL5_0"; }
         when (0x6001B158) { return "ARVDE_BSEV_SECURE_SEC_SEL6_0"; }
         when (0x6001B15C) { return "ARVDE_BSEV_SECURE_SEC_SEL7_0"; }
-        when ([0x60010000..0x600100FF]) { return "UCQ" }
-        when ([0x60011000..0x60011FFF]) { return "BSEA Unknown" }
-        when ([0x6001A000..0x6001AFFF]) { return "SXE" }
-        when ([0x6001B000..0x6001BFFF]) { return "BSEV Unknown" }
-        when ([0x6001C000..0x6001C0FF]) { return "MBE" }
-        when ([0x6001C200..0x6001C2FF]) { return "PPE" }
-        when ([0x6001C400..0x6001C4FF]) { return "MCE" }
-        when ([0x6001C600..0x6001C6FF]) { return "TFE" }
-        when ([0x6001C800..0x6001C8FF]) { return "PPB" }
-        when ([0x6001CA00..0x6001CAFF]) { return "VDMA" }
-        when ([0x6001CC00..0x6001CCFF]) { return "UCQ2" }
-        when ([0x6001D000..0x6001D7FF]) { return "BSEA2" }
-        when ([0x6001D800..0x6001DAFF]) { return "FRAMEID" }
+        when (in_range($addr, 0x60010000, 0x600100FF)) { return "UCQ" }
+        when (in_range($addr, 0x60011000, 0x60011FFF)) { return "BSEA Unknown" }
+        when (in_range($addr, 0x6001A000, 0x6001AFFF)) { return "SXE" }
+        when (in_range($addr, 0x6001B000, 0x6001BFFF)) { return "BSEV Unknown" }
+        when (in_range($addr, 0x6001C000, 0x6001C0FF)) { return "MBE" }
+        when (in_range($addr, 0x6001C200, 0x6001C2FF)) { return "PPE" }
+        when (in_range($addr, 0x6001C400, 0x6001C4FF)) { return "MCE" }
+        when (in_range($addr, 0x6001C600, 0x6001C6FF)) { return "TFE" }
+        when (in_range($addr, 0x6001C800, 0x6001C8FF)) { return "PPB" }
+        when (in_range($addr, 0x6001CA00, 0x6001CAFF)) { return "VDMA" }
+        when (in_range($addr, 0x6001CC00, 0x6001CCFF)) { return "UCQ2" }
+        when (in_range($addr, 0x6001D000, 0x6001D7FF)) { return "BSEA2" }
+        when (in_range($addr, 0x6001D800, 0x6001DAFF)) { return "FRAMEID" }
     }
 
     return "Unknown register";
