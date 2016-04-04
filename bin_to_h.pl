@@ -112,6 +112,8 @@ while (read(BINFILE, $record, 13) > 0) {
         if (($prev_addr == $val1) && ($seq_val == $val2) && ($seq_src == $src)) {
             next;
         }
+
+        $seq--;
     }
 
     # Sequence ended, store it
@@ -119,7 +121,7 @@ while (read(BINFILE, $record, 13) > 0) {
         my $seq_type = 8;
 
         # Not a sequence, if contains only 1 entry
-        if ($seq == 2) {
+        if ($seq == 1) {
             $seq_type = 2;
             $seq = 0;
         }
