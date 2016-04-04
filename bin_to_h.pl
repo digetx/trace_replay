@@ -54,13 +54,13 @@ enum {
     RECORD_END,
 };
 
-static struct record {
-    const uint32_t avp;
-    const uint32_t type;
-    const uint32_t val1;
-    const uint32_t val2;
-    const uint32_t val3;
-    const char *dsc;
+static const struct record {
+    uint32_t avp;
+    uint32_t type;
+    uint32_t val1;
+    uint32_t val2;
+    uint32_t val3;
+    char *dsc;
 } Records[] = {
 H_HEAD
 

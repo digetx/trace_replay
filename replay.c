@@ -265,8 +265,8 @@ static int replay(void)
 		switch (rec->type) {
 		case RECORD_IRQ:
 		{
-			int irq_nb  = rec->val1;
-			int irq_sts = rec->val2;
+			const int irq_nb  = rec->val1;
+			const int irq_sts = rec->val2;
 			int retries = 40;
 
 			printf("%s record IRQ:   %d [%s] sts=%d\n",
@@ -299,9 +299,9 @@ static int replay(void)
 		case RECORD_READ16:
 		case RECORD_READ8:
 		{
-			int size = record_io_size(rec->type);
-			uint32_t addr = rec->val1;
-			uint32_t value = rec->val2;
+			const int size = record_io_size(rec->type);
+			const uint32_t addr = rec->val1;
+			const uint32_t value = rec->val2;
 			uint32_t ret;
 
 			printf("%s record READ%d:  0x%08X [%s] = 0x%08X\n",
@@ -331,9 +331,9 @@ static int replay(void)
 		case RECORD_WRITE16:
 		case RECORD_WRITE8:
 		{
-			int size = record_io_size(rec->type);
-			uint32_t addr = rec->val1;
-			uint32_t value = rec->val2;
+			const int size = record_io_size(rec->type);
+			const uint32_t addr = rec->val1;
+			const uint32_t value = rec->val2;
 
 			printf("%s record WRITE%d: 0x%08X [%s] = 0x%08X\n",
 			       rec_src, size, addr, rec->dsc, value);
@@ -350,9 +350,9 @@ static int replay(void)
 		}
 		case RECORD_MEMSET32:
 		{
-			uint32_t end = rec->val1 + rec->val3 * 4;
+			const uint32_t end = rec->val1 + rec->val3 * 4;
+			const uint32_t value = rec->val2;
 			uint32_t addr = rec->val1;
-			uint32_t value = rec->val2;
 
 			printf("%s record MEMSET32: 0x%08X ... 0x%08X [%s] = 0x%08X\n",
 			       rec_src, addr, end, rec->dsc, value);
@@ -360,7 +360,7 @@ static int replay(void)
 			assert(addr >= io_addr_start);
 			assert((end + 4) <= io_addr_end);
 
-			for (addr = rec->val1; addr <= end; addr += 4) {
+			for (; addr <= end; addr += 4) {
 // 				if (rec->avp) {
 // 					avp_write(value, addr, 32);
 // 				} else {
