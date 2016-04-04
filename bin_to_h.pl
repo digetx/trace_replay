@@ -44,7 +44,7 @@ enum {
     RECORD_IRQ,
     RECORD_READ32,
     RECORD_WRITE32,
-    RECORD_READ32NF,
+    RECORD_READ32NF, // don't fail if read value doesn't math the recorded
     RECORD_READ8,
     RECORD_WRITE8,
     RECORD_READ16,
