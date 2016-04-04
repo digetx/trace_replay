@@ -119,7 +119,7 @@ while (read(BINFILE, $record, 13) > 0) {
         my $seq_type = 8;
 
         # Not a sequence, if contains only 1 entry
-        if ($seq == 1) {
+        if ($seq == 2) {
             $seq_type = 2;
             $seq = 0;
         }
