@@ -215,7 +215,7 @@ static void map_mem(off_t phys_address, off_t size)
 
 	assert(mem_virt != MAP_FAILED);
 
-	mem_virt += PageOffset >> 2;
+	mem_virt += PageOffset;
 
 	io_addr_start = phys_address;
 	io_addr_end   = phys_address + size;
